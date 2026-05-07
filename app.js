@@ -359,11 +359,11 @@ function selectEquipo(eq) {
 
     renderChart(currentChartType);
 
-    dom.detailPanel.classList.remove('-translate-x-[110%]', 'opacity-0', 'pointer-events-none');
+    dom.detailPanel.classList.remove('-translate-x-[120%]', 'md:-translate-x-[110%]', 'opacity-0', 'pointer-events-none');
 }
 
 function closeDetailPanel() {
-    dom.detailPanel.classList.add('-translate-x-[110%]', 'opacity-0', 'pointer-events-none');
+    dom.detailPanel.classList.add('-translate-x-[120%]', 'md:-translate-x-[110%]', 'opacity-0', 'pointer-events-none');
     selectedEquipo = null;
     map.closePopup();
 }
