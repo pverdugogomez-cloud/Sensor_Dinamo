@@ -41,12 +41,12 @@
     
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="h-screen w-screen overflow-hidden bg-slate-50 text-slate-900 font-sans flex antialiased">
+<body class="h-screen w-screen overflow-hidden bg-slate-50 text-slate-900 font-sans flex flex-col md:flex-row antialiased">
 
 
 
     <!-- Sidebar 25% -->
-    <aside class="w-1/4 h-full bg-white border-r border-slate-200 flex flex-col z-20 relative shadow-xl">
+    <aside class="w-full md:w-1/4 h-[40vh] md:h-full bg-white border-t md:border-t-0 md:border-r border-slate-200 flex flex-col z-20 relative shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] md:shadow-xl order-2 md:order-1">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
             <div>
                 <h1 class="text-xl font-bold text-slate-900 tracking-wide">DÍNAMO<span class="text-electric-500 font-light">SYSTEMS</span></h1>
@@ -70,11 +70,11 @@
     </aside>
 
     <!-- Main Panel 75% -->
-    <main class="w-3/4 h-full relative z-10 bg-slate-100">
+    <main class="w-full md:w-3/4 h-[60vh] md:h-full relative z-10 bg-slate-100 order-1 md:order-2">
         <div id="map" class="w-full h-full z-0"></div>
 
         <!-- Panel de Detalle e Interacción (Pop-up Lateral) -->
-        <div id="detail-panel" class="absolute top-4 left-4 bottom-4 w-[400px] bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-2xl flex flex-col transform -translate-x-[110%] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-[1000] overflow-hidden opacity-0 pointer-events-none">
+        <div id="detail-panel" class="absolute inset-2 md:inset-auto md:top-4 md:left-4 md:bottom-4 w-auto md:w-[400px] bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-2xl flex flex-col transform -translate-x-[120%] md:-translate-x-[110%] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-[1000] overflow-hidden opacity-0 pointer-events-none">
             
             <div class="p-5 border-b border-slate-100 flex justify-between items-start bg-slate-50">
                 <div>
@@ -147,17 +147,17 @@
 
     <!-- Modal Expandido (Analítico) -->
     <div id="expanded-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[2000] hidden flex-col transition-opacity duration-300 opacity-0">
-        <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white shadow-sm">
-            <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
+        <div class="p-4 md:p-6 border-b border-white/10 flex justify-between items-center bg-white shadow-sm">
+            <h2 class="text-lg md:text-2xl font-bold text-slate-900 flex items-center gap-2 md:gap-3">
                 <i class="ph ph-chart-line-up text-electric-600"></i>
-                Análisis Detallado <span id="expanded-title" class="text-slate-500 font-light"></span>
+                <span class="truncate">Análisis Detallado <span id="expanded-title" class="text-slate-500 font-light"></span></span>
             </h2>
-            <button id="btn-close-expanded" class="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition">
-                <i class="ph ph-x text-2xl"></i>
+            <button id="btn-close-expanded" class="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition shrink-0">
+                <i class="ph ph-x text-xl md:text-2xl"></i>
             </button>
         </div>
-        <div class="flex-1 p-8 w-full max-w-7xl mx-auto flex flex-col">
-             <div class="flex-1 relative w-full bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl">
+        <div class="flex-1 p-2 md:p-8 w-full max-w-7xl mx-auto flex flex-col min-h-0">
+             <div class="flex-1 relative w-full bg-white border border-slate-200 rounded-xl md:rounded-2xl p-2 md:p-6 shadow-2xl overflow-hidden">
                  <canvas id="expandedChart"></canvas>
              </div>
         </div>
