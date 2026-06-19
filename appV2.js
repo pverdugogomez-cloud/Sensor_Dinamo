@@ -30,6 +30,7 @@ const dom = {
 
     btnChartAmp: document.getElementById('btn-chart-amp'),
     btnChartVol: document.getElementById('btn-chart-vol'),
+    btnChartUnb: document.getElementById('btn-chart-unb'),
 
     // DOM Lecturas Trifásicas
     statL1Amp: document.getElementById('stat-l1-amp'),
@@ -57,13 +58,15 @@ const dom = {
     expandedTitle: document.getElementById('expanded-title'),
 };
 
-// Calcula el desbalance de fases (%)
+// Calcula el desbalance de fases (%) usando la Norma NEMA
 function calcularDesbalance(i1, i2, i3) {
     const avg = (i1 + i2 + i3) / 3;
     if (avg === 0) return 0;
-    const maxVal = Math.max(i1, i2, i3);
-    const minVal = Math.min(i1, i2, i3);
-    return ((maxVal - minVal) / avg) * 100;
+    const dev1 = Math.abs(i1 - avg);
+    const dev2 = Math.abs(i2 - avg);
+    const dev3 = Math.abs(i3 - avg);
+    const maxDev = Math.max(dev1, dev2, dev3);
+    return (maxDev / avg) * 100;
 }
 
 // Genera o extrae datos de consumo para el gráfico trifásico
@@ -108,10 +111,12 @@ function generateHistoricalDataTrifasico(type, equipoId) {
             l1Data.push({ x: currentDate, y: Number(record.corriente_l1) });
             l2Data.push({ x: currentDate, y: Number(record.corriente_l2) });
             l3Data.push({ x: currentDate, y: Number(record.corriente_l3) });
-        } else {
+        } else if (type === 'voltaje') {
             l1Data.push({ x: currentDate, y: Number(record.voltaje_l1) });
             l2Data.push({ x: currentDate, y: Number(record.voltaje_l2) });
             l3Data.push({ x: currentDate, y: Number(record.voltaje_l3) });
+        } else if (type === 'desbalance') {
+            l1Data.push({ x: currentDate, y: Number(record.desbalance) });
         }
     });
 
@@ -156,16 +161,17 @@ function initMap() {
 }
 
 function initEventListeners() {
-    dom.btnCloseDetail.addEventListener('click', closeDetailPanel);
+    if (dom.btnCloseDetail) dom.btnCloseDetail.addEventListener('click', closeDetailPanel);
 
-    dom.btnChartAmp.addEventListener('click', () => switchChartType('amperaje'));
-    dom.btnChartVol.addEventListener('click', () => switchChartType('voltaje'));
+    if (dom.btnChartAmp) dom.btnChartAmp.addEventListener('click', () => switchChartType('amperaje'));
+    if (dom.btnChartVol) dom.btnChartVol.addEventListener('click', () => switchChartType('voltaje'));
+    if (dom.btnChartUnb) dom.btnChartUnb.addEventListener('click', () => switchChartType('desbalance'));
 
-    dom.btnExpand.addEventListener('click', openExpandedModal);
-    dom.btnCloseExpanded.addEventListener('click', closeExpandedModal);
+    if (dom.btnExpand) dom.btnExpand.addEventListener('click', openExpandedModal);
+    if (dom.btnCloseExpanded) dom.btnCloseExpanded.addEventListener('click', closeExpandedModal);
 
-    dom.dateFrom.addEventListener('change', () => { if (selectedEquipo) renderChart(currentChartType); });
-    dom.dateTo.addEventListener('change', () => { if (selectedEquipo) renderChart(currentChartType); });
+    if (dom.dateFrom) dom.dateFrom.addEventListener('change', () => { if (selectedEquipo) renderChart(currentChartType); });
+    if (dom.dateTo) dom.dateTo.addEventListener('change', () => { if (selectedEquipo) renderChart(currentChartType); });
 
     const getLocalISODate = (date) => {
         const y = date.getFullYear();
@@ -181,8 +187,8 @@ function initEventListeners() {
         const dEnd = new Date(today);
         dEnd.setDate(today.getDate() - daysOffsetEnd);
 
-        dom.dateFrom.value = getLocalISODate(dStart);
-        dom.dateTo.value = getLocalISODate(dEnd);
+        if (dom.dateFrom) dom.dateFrom.value = getLocalISODate(dStart);
+        if (dom.dateTo) dom.dateTo.value = getLocalISODate(dEnd);
 
         ['btn-filter-today', 'btn-filter-yesterday', 'btn-filter-week'].forEach(id => {
             const btn = document.getElementById(id);
@@ -193,16 +199,18 @@ function initEventListeners() {
         });
         if (btnId) {
             const activeBtn = document.getElementById(btnId);
-            activeBtn.classList.remove('bg-slate-200', 'text-slate-700');
-            activeBtn.classList.add('bg-electric-500', 'text-white');
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-200', 'text-slate-700');
+                activeBtn.classList.add('bg-electric-500', 'text-white');
+            }
         }
 
         if (selectedEquipo) renderChart(currentChartType);
     };
 
-    dom.btnFilterToday.addEventListener('click', () => setDates(0, 0, 'btn-filter-today'));
-    dom.btnFilterYesterday.addEventListener('click', () => setDates(1, 1, 'btn-filter-yesterday'));
-    dom.btnFilterWeek.addEventListener('click', () => setDates(7, 0, 'btn-filter-week'));
+    if (dom.btnFilterToday) dom.btnFilterToday.addEventListener('click', () => setDates(0, 0, 'btn-filter-today'));
+    if (dom.btnFilterYesterday) dom.btnFilterYesterday.addEventListener('click', () => setDates(1, 1, 'btn-filter-yesterday'));
+    if (dom.btnFilterWeek) dom.btnFilterWeek.addEventListener('click', () => setDates(7, 0, 'btn-filter-week'));
 }
 
 // --- Fetch y Procesamiento de Datos ---
@@ -287,8 +295,10 @@ async function fetchRealData() {
                     if (!dom.expandedModal.classList.contains('hidden') && expandedChartInstance) {
                         const { l1Data, l2Data, l3Data } = generateHistoricalDataTrifasico(currentChartType, selectedEquipo.dispositivo_id);
                         expandedChartInstance.data.datasets[0].data = l1Data;
-                        expandedChartInstance.data.datasets[1].data = l2Data;
-                        expandedChartInstance.data.datasets[2].data = l3Data;
+                        if (currentChartType !== 'desbalance') {
+                            expandedChartInstance.data.datasets[1].data = l2Data;
+                            expandedChartInstance.data.datasets[2].data = l3Data;
+                        }
                         expandedChartInstance.update('none');
                     }
                 }
@@ -321,8 +331,8 @@ function loadEquipment(data) {
         const minutosInactivo = (ahora - fechaUltimoDato) / (1000 * 60);
 
         const hasOverload = eq.corriente > 75; // Límite nominal de corriente promedio
-        const hasUnbalance = eq.desbalance > 8;
-        const hasCriticalUnbalance = eq.desbalance > 15;
+        const hasUnbalance = eq.desbalance > 4; // Límite NEMA Alerta
+        const hasCriticalUnbalance = eq.desbalance > 8; // Límite NEMA Crítico
 
         let estado = 'ACTIVO';
         let badgeColor = 'bg-emerald-500';
@@ -470,9 +480,9 @@ function updateRealTimeReadings(eq) {
 
     // Desbalance
     dom.statUnbalance.textContent = eq.desbalance.toFixed(1);
-    if (eq.desbalance > 15) {
+    if (eq.desbalance > 8) {
         dom.badgeUnbalance.className = "text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-red-100 text-red-700 animate-pulse";
-    } else if (eq.desbalance > 8) {
+    } else if (eq.desbalance > 4) {
         dom.badgeUnbalance.className = "text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-amber-100 text-amber-700";
     } else {
         dom.badgeUnbalance.className = "text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-100 text-emerald-700";
@@ -490,7 +500,7 @@ function updateRealTimeReadings(eq) {
 
     // Actualizar tacómetros visuales (velocímetros)
     updateGauge('gauge-amp-arc', 'gauge-amp-text', eq.corriente, 100, false);
-    updateGauge('gauge-desbal-arc', 'gauge-desbal-text', eq.desbalance, 30, true);
+    updateGauge('gauge-desbal-arc', 'gauge-desbal-text', eq.desbalance, 20, true);
 }
 
 // Función auxiliar para actualizar relojes SVG (Tacómetros)
@@ -510,10 +520,10 @@ function updateGauge(arcId, textId, value, maxVal, isPercent) {
     // Color del arco según severidad
     let color = '#10b981'; // Verde por defecto (sano)
     if (isPercent) {
-        if (value > 15) {
-            color = '#ef4444'; // Rojo (Crítico)
-        } else if (value > 8) {
-            color = '#f59e0b'; // Amarillo (Alerta)
+        if (value > 8) {
+            color = '#ef4444'; // Rojo (Crítico NEMA)
+        } else if (value > 4) {
+            color = '#f59e0b'; // Amarillo (Alerta NEMA)
         } else {
             color = '#10b981'; // Verde
         }
@@ -542,12 +552,16 @@ function closeDetailPanel() {
 function switchChartType(type) {
     currentChartType = type;
 
-    if (type === 'amperaje') {
-        dom.btnChartAmp.className = 'flex-1 py-1.5 text-xs font-medium rounded-md bg-white text-slate-900 shadow-sm border border-slate-200 transition';
-        dom.btnChartVol.className = 'flex-1 py-1.5 text-xs font-medium rounded-md text-slate-500 hover:text-slate-900 transition';
-    } else {
-        dom.btnChartVol.className = 'flex-1 py-1.5 text-xs font-medium rounded-md bg-white text-slate-900 shadow-sm border border-slate-200 transition';
-        dom.btnChartAmp.className = 'flex-1 py-1.5 text-xs font-medium rounded-md text-slate-500 hover:text-slate-900 transition';
+    [dom.btnChartAmp, dom.btnChartVol, dom.btnChartUnb].forEach(btn => {
+        if (btn) btn.className = 'flex-1 py-1.5 text-xs font-medium rounded-md text-slate-500 hover:text-slate-900 transition';
+    });
+
+    let activeBtn = dom.btnChartAmp;
+    if (type === 'voltaje') activeBtn = dom.btnChartVol;
+    else if (type === 'desbalance') activeBtn = dom.btnChartUnb;
+
+    if (activeBtn) {
+        activeBtn.className = 'flex-1 py-1.5 text-xs font-medium rounded-md bg-white text-slate-900 shadow-sm border border-slate-200 transition';
     }
 
     if (selectedEquipo) {
@@ -559,11 +573,21 @@ function renderChart(type) {
     const ctx = document.getElementById('consumptionChart').getContext('2d');
     const { l1Data, l2Data, l3Data } = generateHistoricalDataTrifasico(type, selectedEquipo.dispositivo_id);
 
+    console.log("[Chart Debug] renderChart llamado", {
+        tipoSolicitado: type,
+        tipoActual: currentChart ? currentChart.chartType : 'ninguno',
+        equipoSolicitado: selectedEquipo.dispositivo_id,
+        equipoActual: currentChart ? currentChart.dispositivoId : 'ninguno',
+        reutilizandoGrafico: !!(currentChart && currentChart.chartType === type && currentChart.dispositivoId === selectedEquipo.dispositivo_id)
+    });
+
     // Si el gráfico ya existe, es del mismo tipo y del mismo equipo, solo actualizamos los datos sin destruir para evitar el parpadeo
     if (currentChart && currentChart.chartType === type && currentChart.dispositivoId === selectedEquipo.dispositivo_id) {
         currentChart.data.datasets[0].data = l1Data;
-        currentChart.data.datasets[1].data = l2Data;
-        currentChart.data.datasets[2].data = l3Data;
+        if (type !== 'desbalance') {
+            currentChart.data.datasets[1].data = l2Data;
+            currentChart.data.datasets[2].data = l3Data;
+        }
         currentChart.update('none'); // Desplazamiento suave sin pestañeo
         return;
     }
@@ -575,8 +599,15 @@ function renderChart(type) {
     Chart.defaults.color = '#64748b';
     Chart.defaults.font.family = 'Inter';
 
-    const titleType = type === 'amperaje' ? 'Amperaje' : 'Voltaje';
-    const unit = type === 'amperaje' ? 'A' : 'V';
+    let titleType = 'Amperaje';
+    let unit = 'A';
+    if (type === 'voltaje') {
+        titleType = 'Voltaje';
+        unit = 'V';
+    } else if (type === 'desbalance') {
+        titleType = 'Desbalance NEMA';
+        unit = '%';
+    }
 
     const noDataPlugin = {
         id: 'noData',
@@ -598,47 +629,65 @@ function renderChart(type) {
         }
     };
 
+    const datasets = [];
+    if (type === 'desbalance') {
+        datasets.push({
+            label: 'Desbalance NEMA (%)',
+            data: l1Data,
+            borderColor: '#f97316', // Naranja
+            borderWidth: 2.5,
+            tension: 0.3,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointHitRadius: 15,
+            fill: false,
+            spanGaps: false
+        });
+    } else {
+        datasets.push(
+            {
+                label: 'Fase L1',
+                data: l1Data,
+                borderColor: '#0ea5e9', // Azul
+                borderWidth: 2,
+                tension: 0.3,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                pointHitRadius: 15,
+                fill: false,
+                spanGaps: false
+            },
+            {
+                label: 'Fase L2',
+                data: l2Data,
+                borderColor: '#10b981', // Verde
+                borderWidth: 2,
+                tension: 0.3,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                pointHitRadius: 15,
+                fill: false,
+                spanGaps: false
+            },
+            {
+                label: 'Fase L3',
+                data: l3Data,
+                borderColor: '#f59e0b', // Naranja
+                borderWidth: 2,
+                tension: 0.3,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                pointHitRadius: 15,
+                fill: false,
+                spanGaps: false
+            }
+        );
+    }
+
     currentChart = new Chart(ctx, {
         type: 'line',
         data: {
-            datasets: [
-                {
-                    label: 'Fase L1',
-                    data: l1Data,
-                    borderColor: '#0ea5e9', // Azul
-                    borderWidth: 2,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    pointHitRadius: 15,
-                    fill: false,
-                    spanGaps: false
-                },
-                {
-                    label: 'Fase L2',
-                    data: l2Data,
-                    borderColor: '#10b981', // Verde
-                    borderWidth: 2,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    pointHitRadius: 15,
-                    fill: false,
-                    spanGaps: false
-                },
-                {
-                    label: 'Fase L3',
-                    data: l3Data,
-                    borderColor: '#f59e0b', // Naranja
-                    borderWidth: 2,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    pointHitRadius: 15,
-                    fill: false,
-                    spanGaps: false
-                }
-            ]
+            datasets: datasets
         },
         options: {
             responsive: true,
@@ -721,7 +770,16 @@ function renderChart(type) {
 function openExpandedModal() {
     if (!selectedEquipo) return;
 
-    const titleType = currentChartType === 'amperaje' ? 'AMPERAJE TRÍFASICO' : 'VOLTAJE TRÍFASICO';
+    let titleType = 'AMPERAJE TRÍFASICO';
+    let unit = 'A';
+    if (currentChartType === 'voltaje') {
+        titleType = 'VOLTAJE TRÍFASICO';
+        unit = 'V';
+    } else if (currentChartType === 'desbalance') {
+        titleType = 'DESBALANCE NEMA';
+        unit = '%';
+    }
+
     dom.expandedTitle.textContent = `- ${selectedEquipo.nombre} (${titleType})`;
     dom.expandedModal.classList.remove('hidden');
     dom.expandedModal.classList.add('flex');
@@ -731,49 +789,66 @@ function openExpandedModal() {
     if (expandedChartInstance) expandedChartInstance.destroy();
 
     const { l1Data, l2Data, l3Data } = generateHistoricalDataTrifasico(currentChartType, selectedEquipo.dispositivo_id);
-    const unit = currentChartType === 'amperaje' ? 'A' : 'V';
+
+    const datasets = [];
+    if (currentChartType === 'desbalance') {
+        datasets.push({
+            label: 'Desbalance NEMA (%)',
+            data: l1Data,
+            borderColor: '#f97316',
+            borderWidth: 2,
+            tension: 0.2,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointHitRadius: 15,
+            fill: false,
+            spanGaps: false
+        });
+    } else {
+        datasets.push(
+            {
+                label: 'Fase L1',
+                data: l1Data,
+                borderColor: '#0ea5e9',
+                borderWidth: 1.5,
+                tension: 0.2,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                pointHitRadius: 15,
+                fill: false,
+                spanGaps: false
+            },
+            {
+                label: 'Fase L2',
+                data: l2Data,
+                borderColor: '#10b981',
+                borderWidth: 1.5,
+                tension: 0.2,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                pointHitRadius: 15,
+                fill: false,
+                spanGaps: false
+            },
+            {
+                label: 'Fase L3',
+                data: l3Data,
+                borderColor: '#f59e0b',
+                borderWidth: 1.5,
+                tension: 0.2,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                pointHitRadius: 15,
+                fill: false,
+                spanGaps: false
+            }
+        );
+    }
 
     expandedChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-            datasets: [
-                {
-                    label: 'Fase L1',
-                    data: l1Data,
-                    borderColor: '#0ea5e9',
-                    borderWidth: 1.5,
-                    tension: 0.2,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    pointHitRadius: 15,
-                    fill: false,
-                    spanGaps: false
-                },
-                {
-                    label: 'Fase L2',
-                    data: l2Data,
-                    borderColor: '#10b981',
-                    borderWidth: 1.5,
-                    tension: 0.2,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    pointHitRadius: 15,
-                    fill: false,
-                    spanGaps: false
-                },
-                {
-                    label: 'Fase L3',
-                    data: l3Data,
-                    borderColor: '#f59e0b',
-                    borderWidth: 1.5,
-                    tension: 0.2,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    pointHitRadius: 15,
-                    fill: false,
-                    spanGaps: false
-                }
-            ]
+            datasets: datasets
         },
         options: {
             responsive: true,

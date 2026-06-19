@@ -6,6 +6,7 @@
     <title>Diagnóstico de Motores: Desbalance vs Sobrecarga</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
     </style>
@@ -45,6 +46,12 @@
                     <p class="text-slate-600 mt-0.5">Requiere **mantenimiento mecánico**: limpiar la succión, engrasar o alinear ejes.</p>
                 </div>
             </div>
+            <div class="mt-5 border-t border-slate-100 pt-4 flex">
+                <a href="visualizador_sobrecarga.html" class="sim-trigger w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all text-center">
+                    <i class="ph ph-play-circle text-base"></i>
+                    Simulador Interactivo de Carga
+                </a>
+            </div>
         </div>
 
         <!-- Tarjeta Desbalance -->
@@ -71,6 +78,12 @@
                     <h4 class="font-bold text-slate-700">CÓMO SE CORRIGE:</h4>
                     <p class="text-slate-600 mt-0.5">Requiere **mantenimiento eléctrico**: apretar conexiones, cambiar contactores o verificar aislamiento de bobinas.</p>
                 </div>
+            </div>
+            <div class="mt-5 border-t border-slate-100 pt-4 flex">
+                <a href="visualizador_desbalanceo.html" class="sim-trigger w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all text-center">
+                    <i class="ph ph-play-circle text-base"></i>
+                    Simulador Interactivo de Desbalance
+                </a>
             </div>
         </div>
 
@@ -145,5 +158,73 @@
         Dínamo Systems V2 • Monitoreo Predictivo de Motores Trifásicos
     </footer>
 
+    <!-- Modal del Simulador (iframe) -->
+    <div id="sim-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[3000] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
+            <!-- Encabezado del Modal -->
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 id="sim-modal-title" class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="ph ph-cpu text-indigo-500"></i>
+                    Simulador Interactivo
+                </h3>
+                <button id="btn-close-sim" class="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+            <!-- Cuerpo del Modal (iframe) -->
+            <div class="flex-1 w-full h-full bg-slate-100">
+                <iframe id="sim-iframe" src="" class="w-full h-full border-0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Control del Modal -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('sim-modal');
+            const iframe = document.getElementById('sim-iframe');
+            const modalTitle = document.getElementById('sim-modal-title');
+            const closeBtn = document.getElementById('btn-close-sim');
+            const triggers = document.querySelectorAll('.sim-trigger');
+
+            triggers.forEach(trigger => {
+                trigger.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const url = trigger.getAttribute('href');
+                    const title = trigger.innerText.trim();
+                    
+                    // Si estamos dentro de un iframe (abierto desde la página principal)
+                    if (window.self !== window.top) {
+                        window.parent.postMessage({
+                            action: 'openSimulator',
+                            url: url,
+                            title: title
+                        }, '*');
+                    } else {
+                        // Si se abre de forma directa/independiente
+                        iframe.src = url;
+                        modalTitle.innerHTML = `<i class="ph ph-cpu text-indigo-600 text-lg"></i> ${title}`;
+                        modal.classList.remove('hidden');
+                        modal.classList.add('flex');
+                        document.body.style.overflow = 'hidden'; // Bloquear scroll
+                    }
+                });
+            });
+
+            const closeModal = () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                iframe.src = ''; // Detener scripts del simulador limpiando el frame
+                document.body.style.overflow = ''; // Restaurar scroll
+            };
+
+            closeBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
