@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico de Motores: Desbalance vs Sobrecarga</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 p-6 md:p-12 max-w-4xl mx-auto">
+
+    <header class="mb-10 text-center md:text-left">
+        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">¿Esfuerzo Mecánico o Falla Eléctrica?</h1>
+        <p class="text-slate-500 mt-2 text-lg">Guía práctica para entender y diagnosticar el estado de tus bombas trifásicas.</p>
+    </header>
+
+    <!-- Sección de Comparación Visual -->
+    <div class="grid md:grid-cols-2 gap-8 mb-10">
+        
+        <!-- Tarjeta Sobrecarga -->
+        <div class="bg-white border-t-4 border-red-500 rounded-xl shadow-sm p-6 hover:shadow-md transition">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="p-2 bg-red-50 rounded-lg text-red-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </span>
+                <h2 class="text-xl font-bold text-slate-900">Sobrecarga Mecánica</h2>
+            </div>
+            <p class="text-sm font-semibold text-red-700 bg-red-50 inline-block px-2 py-0.5 rounded mb-3">El motor está "pesado"</p>
+            <p class="text-slate-600 text-sm mb-4">Ocurre cuando la bomba o el motor tienen que hacer una fuerza física desmesurada para girar.</p>
+            
+            <div class="border-t border-slate-100 pt-4 space-y-3 text-xs">
+                <div>
+                    <h4 class="font-bold text-slate-700">SÍNTOMA EN CORRIENTE:</h4>
+                    <p class="text-slate-600 mt-0.5">Las tres fases suben de amperaje de manera **pareja** (ej: 18A - 18A - 18A).</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-700">CAUSAS COMUNES:</h4>
+                    <p class="text-slate-600 mt-0.5">• Bomba obstruida con barro o sedimentos.<br>• Rodamientos secos, gastados o trancados.<br>• Exceso de caudal o presión en la salida.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-700">CÓMO SE CORRIGE:</h4>
+                    <p class="text-slate-600 mt-0.5">Requiere **mantenimiento mecánico**: limpiar la succión, engrasar o alinear ejes.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta Desbalance -->
+        <div class="bg-white border-t-4 border-amber-500 rounded-xl shadow-sm p-6 hover:shadow-md transition">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="p-2 bg-amber-50 rounded-lg text-amber-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </span>
+                <h2 class="text-xl font-bold text-slate-900">Desbalance Eléctrico</h2>
+            </div>
+            <p class="text-sm font-semibold text-amber-700 bg-amber-50 inline-block px-2 py-0.5 rounded mb-3">El motor está "cojo"</p>
+            <p class="text-slate-600 text-sm mb-4">Ocurre cuando la energía no fluye de manera uniforme por las tres líneas o bobinas.</p>
+            
+            <div class="border-t border-slate-100 pt-4 space-y-3 text-xs">
+                <div>
+                    <h4 class="font-bold text-slate-700">SÍNTOMA EN CORRIENTE:</h4>
+                    <p class="text-slate-600 mt-0.5">Las corrientes de las fases son **desiguales** (ej: 15A - 8A - 7A).</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-700">CAUSAS COMUNES:</h4>
+                    <p class="text-slate-600 mt-0.5">• Bornes de conexión sulfatados o sueltos.<br>• Contactores del tablero gastados.<br>• Daño o cortocircuito leve en el bobinado interno.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-700">CÓMO SE CORRIGE:</h4>
+                    <p class="text-slate-600 mt-0.5">Requiere **mantenimiento eléctrico**: apretar conexiones, cambiar contactores o verificar aislamiento de bobinas.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Sección Criterios de Colores y Testigos -->
+    <section class="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm mb-8">
+        <h3 class="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">Semáforo de Criterios y Alertas (Dínamo V2)</h3>
+        <div class="space-y-6 text-sm">
+            
+            <!-- Testigo Eléctrico Rayo -->
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-red-500 font-bold text-lg">⚡</span>
+                    <h4 class="font-bold text-slate-800">Testigo de Desbalance Eléctrico (Rayo)</h4>
+                </div>
+                <ul class="space-y-2 pl-6 list-disc text-slate-600 text-xs md:text-sm">
+                    <li><span class="font-semibold text-emerald-600">Gris Claro (Normal):</span> Desbalance de corriente menor o igual al <strong>8%</strong>. El motor trabaja de forma equilibrada.</li>
+                    <li><span class="font-semibold text-amber-500">Amarillo (Alerta):</span> Desbalance entre <strong>8.1% y 15%</strong>. Se enciende de advertencia para programar inspección.</li>
+                    <li><span class="font-semibold text-red-500">Rojo Parpadeante (Crítico):</span> Desbalance superior al <strong>15%</strong>. Riesgo alto de quemar el bobinado en minutos.</li>
+                </ul>
+            </div>
+
+            <!-- Testigo Mecánico Llave -->
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-red-500 font-bold text-lg">🔧</span>
+                    <h4 class="font-bold text-slate-800">Testigo de Esfuerzo Mecánico (Llave Inglesa)</h4>
+                </div>
+                <ul class="space-y-2 pl-6 list-disc text-slate-600 text-xs md:text-sm">
+                    <li><span class="font-semibold text-emerald-600">Gris Claro (Normal):</span> Corriente promedio menor o igual a <strong>75A</strong>. La carga está en rangos de diseño.</li>
+                    <li><span class="font-semibold text-red-500">Rojo Parpadeante (Sobrecarga):</span> Corriente promedio superior a los <strong>75A</strong>. Indica sobrecarga mecánica por atasco u obstrucción.</li>
+                </ul>
+            </div>
+
+            <!-- Punto de Estado -->
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="inline-block w-3.5 h-3.5 rounded-full bg-emerald-500"></span>
+                    <h4 class="font-bold text-slate-800">Punto General de Estado en Tarjeta</h4>
+                </div>
+                <ul class="space-y-2 pl-6 list-disc text-slate-600 text-xs md:text-sm">
+                    <li><span class="font-semibold text-emerald-600">Verde (ACTIVO):</span> Equipo encendido y operando bajo parámetros ideales y balanceados.</li>
+                    <li><span class="font-semibold text-amber-500">Amarillo (ALERTA):</span> Equipo operando con desbalance moderado.</li>
+                    <li><span class="font-semibold text-red-500">Rojo (CRÍTICO / SOBRECARGA):</span> Motor detenido o en peligro por desbalance severo o sobrecarga mecánica.</li>
+                    <li><span class="font-semibold text-slate-500">Gris (APAGADO):</span> Corriente promedio es de exactamente <strong>0A</strong> (motor completamente detenido).</li>
+                </ul>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Sección Cómo lo hace el programa -->
+    <section class="bg-slate-900 text-white rounded-2xl p-6 md:p-8 shadow-inner mb-6">
+        <h3 class="text-lg font-bold text-electric-500 mb-2 uppercase tracking-wider">¿Cómo te ayuda Dínamo Systems V2?</h3>
+        <p class="text-slate-300 text-sm leading-relaxed mb-4">
+            El sistema recopila las lecturas de corriente de las tres fases en tiempo real y realiza un análisis automatizado:
+        </p>
+        <ul class="space-y-2 text-xs md:text-sm text-slate-400">
+            <li class="flex items-start gap-2">
+                <span class="text-emerald-500 mt-0.5">✔</span>
+                <span>Si el consumo sube uniformemente en las tres líneas, el sistema enciende la alarma de <strong>SOBRECARGA MECÁNICA</strong> para que envíes a un mecánico.</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <span class="text-emerald-500 mt-0.5">✔</span>
+                <span>Si detecta una diferencia entre fases mayor al 8%, calcula el desbalance matemático e inmediatamente gatilla una <strong>ALERTA DE DESBALANCE</strong> para que asista un electricista antes de que el motor se queme.</span>
+            </li>
+        </ul>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 mt-8">
+        Dínamo Systems V2 • Monitoreo Predictivo de Motores Trifásicos
+    </footer>
+
+</body>
+</html>
