@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Desbalanceo: Guía Interactiva</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts & Phosphor Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Estilos de los devanados en SVG */
+        .coil {
+            transition: stroke 0.4s ease, filter 0.4s ease;
+            stroke-width: 8;
+            stroke-linecap: round;
+            fill: none;
+        }
+
+        .stator-core {
+            fill: #f1f5f9;
+            stroke: #cbd5e1;
+            stroke-width: 4;
+        }
+
+        .rotor {
+            fill: #e2e8f0;
+            stroke: #94a3b8;
+            stroke-width: 3;
+            transition: transform 0.1s linear;
+            transform-origin: 200px 200px;
+        }
+
+        /* Custom sliders styling override for consistency */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #cbd5e1;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid #6366f1;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 p-6 md:p-12 max-w-6xl mx-auto">
+
+    <header class="mb-10 text-center md:text-left">
+        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center md:justify-start gap-2.5">
+            <span class="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                <i class="ph ph-cpu text-2xl"></i>
+            </span>
+            Simulador de Desbalanceo Térmico de Estator
+        </h1>
+        <p class="text-slate-500 mt-2 text-lg">Ajusta el amperaje de cada fase para observar el sobrecalentamiento asimétrico en el bobinado del motor en tiempo real.</p>
+    </header>
+
+    <main class="grid md:grid-cols-12 gap-8">
+        
+        <!-- Panel Izquierdo: Visualización y Teoría (7 Columnas en escritorio) -->
+        <div class="md:col-span-7 flex flex-col gap-6">
+            
+            <!-- Tarjeta Gráfica del Motor -->
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 flex flex-col gap-4">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h2 class="text-lg font-bold text-slate-900">Temperatura en Devanados (Simulado)</h2>
+                    <span class="text-red-500 text-sm font-semibold flex items-center gap-1">
+                        <i class="ph ph-thermometer text-lg"></i>
+                        Estator del Motor
+                    </span>
+                </div>
+                
+                <!-- Contenedor del SVG -->
+                <div class="flex items-center justify-center bg-slate-50 rounded-xl p-6 border border-slate-100 min-h-[350px]">
+                    <svg id="motor-svg" class="w-full max-w-[340px] h-auto" viewBox="0 0 400 400">
+                        <defs>
+                            <!-- Gradiente metálico para carcasa exterior -->
+                            <radialGradient id="metal-casing" cx="50%" cy="50%" r="50%">
+                                <stop offset="70%" stop-color="#475569" />
+                                <stop offset="100%" stop-color="#1e293b" />
+                            </radialGradient>
+                            <!-- Gradiente metálico para núcleo de acero silíceo del estator -->
+                            <radialGradient id="stator-core-grad" cx="50%" cy="50%" r="50%">
+                                <stop offset="75%" stop-color="#94a3b8" />
+                                <stop offset="100%" stop-color="#475569" />
+                            </radialGradient>
+                            <!-- Gradiente para el rotor de jaula de ardilla -->
+                            <radialGradient id="rotor-grad" cx="50%" cy="50%" r="50%">
+                                <stop offset="60%" stop-color="#cbd5e1" />
+                                <stop offset="85%" stop-color="#94a3b8" />
+                                <stop offset="100%" stop-color="#64748b" />
+                            </radialGradient>
+                            <!-- Filtro de brillo para calor crítico -->
+                            <filter id="heat-glow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="6" result="blur" />
+                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                            </filter>
+                        </defs>
+
+                        <!-- Aletas de Ventilación del Motor (Carcasa exterior industrial) -->
+                        <g stroke="#1e293b" stroke-width="8" stroke-linecap="round">
+                            <line x1="200" y1="30" x2="200" y2="370" />
+                            <line x1="30" y1="200" x2="370" y2="200" />
+                            <line x1="80" y1="80" x2="320" y2="320" />
+                            <line x1="80" y1="320" x2="320" y2="80" />
+                            <line x1="115" y1="48" x2="285" y2="352" />
+                            <line x1="285" y1="48" x2="115" y2="352" />
+                            <line x1="48" y1="115" x2="352" y2="285" />
+                            <line x1="352" y1="115" x2="48" y2="285" />
+                        </g>
+
+                        <!-- Carcasa Exterior del Estator -->
+                        <circle cx="200" cy="200" r="160" fill="url(#metal-casing)" stroke="#334155" stroke-width="4" />
+                        <!-- Núcleo de Estator (Laminado Silíceo) -->
+                        <circle cx="200" cy="200" r="135" fill="url(#stator-core-grad)" stroke="#1e293b" stroke-width="3" />
+
+                        <!-- Ranuras del Estator / Ranurado de hierro -->
+                        <g fill="#1e293b">
+                            <rect x="185" y="65" width="30" height="20" rx="5" />
+                            <rect x="185" y="315" width="30" height="20" rx="5" />
+                            <g transform="rotate(120, 200, 200)">
+                                <rect x="185" y="65" width="30" height="20" rx="5" />
+                                <rect x="185" y="315" width="30" height="20" rx="5" />
+                            </g>
+                            <g transform="rotate(240, 200, 200)">
+                                <rect x="185" y="65" width="30" height="20" rx="5" />
+                                <rect x="185" y="315" width="30" height="20" rx="5" />
+                            </g>
+                        </g>
+
+                        <!-- BOBINADOS (Fase L1, L2, L3) -->
+                        <g id="coil-l1" class="coil-group">
+                            <path d="M 175 60 Q 200 20 225 60 L 225 105 Q 200 125 175 105 Z" fill="none" stroke="#38bdf8" stroke-width="8" stroke-linejoin="round" />
+                            <path d="M 185 70 Q 200 35 215 70 L 215 95 Q 200 110 185 95 Z" fill="none" stroke="#0ea5e9" stroke-width="4" stroke-linejoin="round" />
+                            
+                            <path d="M 175 295 Q 200 275 225 295 L 225 340 Q 200 380 175 340 Z" fill="none" stroke="#38bdf8" stroke-width="8" stroke-linejoin="round" />
+                            <path d="M 185 305 Q 200 290 215 305 L 215 330 Q 200 365 185 330 Z" fill="none" stroke="#0ea5e9" stroke-width="4" stroke-linejoin="round" />
+                        </g>
+
+                        <g id="coil-l2" class="coil-group" transform="rotate(120, 200, 200)">
+                            <path d="M 175 60 Q 200 20 225 60 L 225 105 Q 200 125 175 105 Z" fill="none" stroke="#34d399" stroke-width="8" stroke-linejoin="round" />
+                            <path d="M 185 70 Q 200 35 215 70 L 215 95 Q 200 110 185 95 Z" fill="none" stroke="#10b981" stroke-width="4" stroke-linejoin="round" />
+                            
+                            <path d="M 175 295 Q 200 275 225 295 L 225 340 Q 200 380 175 340 Z" fill="none" stroke="#34d399" stroke-width="8" stroke-linejoin="round" />
+                            <path d="M 185 305 Q 200 290 215 305 L 215 330 Q 200 365 185 330 Z" fill="none" stroke="#10b981" stroke-width="4" stroke-linejoin="round" />
+                        </g>
+
+                        <g id="coil-l3" class="coil-group" transform="rotate(240, 200, 200)">
+                            <path d="M 175 60 Q 200 20 225 60 L 225 105 Q 200 125 175 105 Z" fill="none" stroke="#fbbf24" stroke-width="8" stroke-linejoin="round" />
+                            <path d="M 185 70 Q 200 35 215 70 L 215 95 Q 200 110 185 95 Z" fill="none" stroke="#d97706" stroke-width="4" stroke-linejoin="round" />
+                            
+                            <path d="M 175 295 Q 200 275 225 295 L 225 340 Q 200 380 175 340 Z" fill="none" stroke="#fbbf24" stroke-width="8" stroke-linejoin="round" />
+                            <path d="M 185 305 Q 200 290 215 305 L 215 330 Q 200 365 185 330 Z" fill="none" stroke="#d97706" stroke-width="4" stroke-linejoin="round" />
+                        </g>
+
+                        <!-- Entrehierro -->
+                        <circle cx="200" cy="200" r="105" fill="none" stroke="#0f172a" stroke-width="3" />
+
+                        <!-- Rotor central -->
+                        <g id="rotor-assembly">
+                            <circle cx="200" cy="200" r="95" fill="url(#rotor-grad)" stroke="#475569" stroke-width="2" />
+                            
+                            <!-- Barras Jaula de Ardilla -->
+                            <g fill="#f59e0b" stroke="#b45309" stroke-width="1">
+                                <circle cx="200" cy="115" r="6" />
+                                <circle cx="242" cy="126" r="6" />
+                                <circle cx="274" cy="158" r="6" />
+                                <circle cx="285" cy="200" r="6" />
+                                <circle cx="274" cy="242" r="6" />
+                                <circle cx="242" cy="274" r="6" />
+                                <circle cx="200" cy="285" r="6" />
+                                <circle cx="158" cy="274" r="6" />
+                                <circle cx="126" cy="242" r="6" />
+                                <circle cx="115" cy="200" r="6" />
+                                <circle cx="126" cy="158" r="6" />
+                                <circle cx="158" cy="126" r="6" />
+                            </g>
+
+                            <!-- Laminas del rotor -->
+                            <circle cx="200" cy="200" r="75" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="8 4" />
+                            <circle cx="200" cy="200" r="55" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="12 6" />
+
+                            <!-- Eje Central -->
+                            <circle cx="200" cy="200" r="30" fill="#94a3b8" stroke="#475569" stroke-width="3" />
+                            <rect x="194" y="176" width="12" height="12" fill="#475569" />
+                            <circle cx="200" cy="200" r="14" fill="#64748b" stroke="#334155" stroke-width="2" />
+                        </g>
+                    </svg>
+                </div>
+
+                <!-- Barra de desgaste térmico -->
+                <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 mt-2">
+                    <div class="flex justify-between items-center font-bold text-sm text-slate-800 mb-2">
+                        <span>Aumento estimado de Calor:</span>
+                        <span id="wear-percent" class="text-emerald-600">+0%</span>
+                    </div>
+                    <div class="bg-slate-200 rounded-full h-3.5 overflow-hidden border border-slate-300">
+                        <div id="wear-bar" class="h-full w-[5%] bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-full transition-all duration-500"></div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-2 font-medium">
+                        *Regla de Oro: Cada 10°C de sobretemperatura reduce la vida útil del bobinado a la mitad.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Explicación de Diagnóstico -->
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+                <h3 class="text-md font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <i class="ph ph-info text-indigo-500 text-lg"></i>
+                    ¿Cómo afecta el Desbalance al Motor?
+                </h3>
+                <div class="text-sm text-slate-600 space-y-3 leading-relaxed">
+                    <p>
+                        Cuando las corrientes en las bobinas no son iguales, la corriente excedente en la fase más cargada no produce torque útil; en su lugar, se disipa enteramente en forma de **calor localizado**.
+                    </p>
+                    <p>
+                        Esto deteriora rápidamente el barniz aislante del bobinado de cobre, propiciando cortocircuitos internos que queman el motor en poco tiempo.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Panel Derecho: Controles e Indicadores (5 Columnas en escritorio) -->
+        <div class="md:col-span-5 flex flex-col gap-6">
+
+            <!-- Panel de Controles -->
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 flex flex-col gap-5">
+                <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Controles de Corriente (Fases)</h2>
+
+                <div class="space-y-4">
+                    <!-- Fase 1 Slider -->
+                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-3.5 flex flex-col gap-2">
+                        <div class="flex justify-between items-center text-xs font-bold text-slate-700">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-[#38bdf8]"></span>
+                                L1 (Fase A)
+                            </span>
+                            <span id="val-l1" class="font-mono text-sm">50.0 A</span>
+                        </div>
+                        <input type="range" id="slider-l1" min="0" max="100" step="0.5" value="50">
+                    </div>
+
+                    <!-- Fase 2 Slider -->
+                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-3.5 flex flex-col gap-2">
+                        <div class="flex justify-between items-center text-xs font-bold text-slate-700">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-[#34d399]"></span>
+                                L2 (Fase B)
+                            </span>
+                            <span id="val-l2" class="font-mono text-sm">50.0 A</span>
+                        </div>
+                        <input type="range" id="slider-l2" min="0" max="100" step="0.5" value="50">
+                    </div>
+
+                    <!-- Fase 3 Slider -->
+                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-3.5 flex flex-col gap-2">
+                        <div class="flex justify-between items-center text-xs font-bold text-slate-700">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-[#fbbf24]"></span>
+                                L3 (Fase C)
+                            </span>
+                            <span id="val-l3" class="font-mono text-sm">50.0 A</span>
+                        </div>
+                        <input type="range" id="slider-l3" min="0" max="100" step="0.5" value="50">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel de Resultados NEMA -->
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 flex flex-col gap-4">
+                <h3 class="text-md font-bold text-slate-900 border-b border-slate-100 pb-2">Diagnóstico de Corrientes</h3>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-center">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Promedio</span>
+                        <span id="calc-avg" class="text-lg font-bold text-slate-800 font-mono">50.0 A</span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-center">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Desbalance NEMA</span>
+                        <span id="calc-unbalance" class="text-lg font-bold text-emerald-600 font-mono">0.0%</span>
+                    </div>
+                </div>
+
+                <!-- Testigo Dinámico de Estado -->
+                <div id="status-alert" class="flex items-center gap-2.5 p-3 rounded-lg border text-sm font-semibold transition-all duration-300">
+                    <i id="alert-icon" class="ph text-lg"></i>
+                    <span id="alert-text">Calculando...</span>
+                </div>
+            </div>
+
+            <!-- Fórmula Detallada NEMA -->
+            <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-sm">
+                <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Cálculo de Desbalance de Corriente (NEMA)</h3>
+                <div id="formula-text" class="font-mono text-xs text-slate-300 leading-relaxed space-y-1">
+                    Promedio = (50.0 + 50.0 + 50.0) / 3 = 50.0 A<br>
+                    Desviación Máxima = 0.0 A<br>
+                    Desbalance = (0.0 / 50.0) * 100 = 0.0%
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="text-center text-xs text-slate-400 mt-12 border-t border-slate-200 pt-6">
+        Dínamo Systems V2 • Monitoreo Predictivo de Motores Trifásicos
+    </footer>
+
+    <!-- Script del Visualizador -->
+    <script>
+        const sliders = {
+            l1: document.getElementById('slider-l1'),
+            l2: document.getElementById('slider-l2'),
+            l3: document.getElementById('slider-l3')
+        };
+
+        const values = {
+            l1: document.getElementById('val-l1'),
+            l2: document.getElementById('val-l2'),
+            l3: document.getElementById('val-l3'),
+            avg: document.getElementById('calc-avg'),
+            unbalance: document.getElementById('calc-unbalance'),
+            wearPercent: document.getElementById('wear-percent'),
+            formula: document.getElementById('formula-text')
+        };
+
+        const coils = {
+            l1: document.getElementById('coil-l1'),
+            l2: document.getElementById('coil-l2'),
+            l3: document.getElementById('coil-l3')
+        };
+
+        const elements = {
+            statusAlert: document.getElementById('status-alert'),
+            alertIcon: document.getElementById('alert-icon'),
+            alertText: document.getElementById('alert-text'),
+            wearBar: document.getElementById('wear-bar')
+        };
+
+        function calculateMetrics() {
+            const i1 = parseFloat(sliders.l1.value);
+            const i2 = parseFloat(sliders.l2.value);
+            const i3 = parseFloat(sliders.l3.value);
+
+            values.l1.textContent = i1.toFixed(1) + ' A';
+            values.l2.textContent = i2.toFixed(1) + ' A';
+            values.l3.textContent = i3.toFixed(1) + ' A';
+
+            // Promedio
+            const avg = (i1 + i2 + i3) / 3;
+            values.avg.textContent = avg.toFixed(1) + ' A';
+
+            if (avg === 0) {
+                values.unbalance.textContent = '0.0%';
+                values.unbalance.className = 'text-lg font-bold text-emerald-600 font-mono';
+                elements.statusAlert.className = 'flex items-center gap-2.5 p-3 rounded-lg border text-sm font-semibold transition-all duration-300 bg-slate-50 border-slate-200 text-slate-500';
+                elements.alertIcon.className = 'ph ph-power text-lg';
+                elements.alertText.textContent = 'Motor Apagado (0 A)';
+                elements.wearBar.style.width = '0%';
+                values.wearPercent.textContent = '+0%';
+                values.wearPercent.className = 'text-emerald-600';
+                updateCoilGlow(i1, i2, i3, 0);
+                return;
+            }
+
+            // Desviación NEMA
+            const dev1 = Math.abs(i1 - avg);
+            const dev2 = Math.abs(i2 - avg);
+            const dev3 = Math.abs(i3 - avg);
+            const maxDev = Math.max(dev1, dev2, dev3);
+            const unbalanceNema = (maxDev / avg) * 100;
+
+            values.unbalance.textContent = unbalanceNema.toFixed(1) + '%';
+
+            // Actualizar Fórmula
+            let maxDevPhase = 'L1';
+            if (maxDev === dev2) maxDevPhase = 'L2';
+            if (maxDev === dev3) maxDevPhase = 'L3';
+
+            values.formula.innerHTML = 
+                `Promedio = (${i1.toFixed(1)} + ${i2.toFixed(1)} + ${i3.toFixed(1)}) / 3 = ${avg.toFixed(1)} A<br>` +
+                `Desviación Máx = |${(maxDev === dev1 ? i1 : maxDev === dev2 ? i2 : i3).toFixed(1)} - ${avg.toFixed(1)}| = ${maxDev.toFixed(1)} A (Fase ${maxDevPhase})<br>` +
+                `Desbalance NEMA = (${maxDev.toFixed(1)} / ${avg.toFixed(1)}) * 100 = ${unbalanceNema.toFixed(1)}%`;
+
+            // Efecto Térmico (Aumento de temperatura aproximado)
+            const overtempMultiplier = 2 * Math.pow(unbalanceNema, 1.8);
+            const cappedOvertemp = Math.min(overtempMultiplier, 100);
+            elements.wearBar.style.width = `${Math.max(cappedOvertemp, 5)}%`;
+            values.wearPercent.textContent = `+${overtempMultiplier.toFixed(0)}%`;
+
+            // Diagnóstico y alertas según criterios de Dínamo V2
+            if (unbalanceNema <= 4) {
+                values.unbalance.className = 'text-lg font-bold text-emerald-600 font-mono';
+                elements.statusAlert.className = 'flex items-center gap-2.5 p-3 rounded-lg border text-sm font-semibold transition-all duration-300 bg-emerald-50 border-emerald-200 text-emerald-700';
+                elements.alertIcon.className = 'ph ph-check-circle text-lg';
+                elements.alertText.textContent = 'Normal: Balance óptimo (≤ 4%)';
+                values.wearPercent.className = 'text-emerald-600';
+            } else if (unbalanceNema <= 8) {
+                values.unbalance.className = 'text-lg font-bold text-amber-500 font-mono';
+                elements.statusAlert.className = 'flex items-center gap-2.5 p-3 rounded-lg border text-sm font-semibold transition-all duration-300 bg-amber-50 border-amber-200 text-amber-700';
+                elements.alertIcon.className = 'ph ph-warning-circle text-lg';
+                elements.alertText.textContent = 'Alerta: Revisar a la brevedad (4% - 8%)';
+                values.wearPercent.className = 'text-amber-500';
+            } else {
+                values.unbalance.className = 'text-lg font-bold text-red-500 font-mono';
+                elements.statusAlert.className = 'flex items-center gap-2.5 p-3 rounded-lg border text-sm font-semibold transition-all duration-300 bg-red-50 border-red-200 text-red-700 animate-pulse';
+                elements.alertIcon.className = 'ph ph-warning text-lg';
+                elements.alertText.textContent = 'Crítico: Desbalance Severo (> 8%)';
+                values.wearPercent.className = 'text-red-500';
+            }
+
+            // Actualizar iluminación visual de devanados
+            updateCoilGlow(i1, i2, i3, avg);
+        }
+
+        // Cambia el color del devanado dinámicamente representando el calor
+        function updateCoilGlow(i1, i2, i3, avg) {
+            const getHeatColor = (current, average) => {
+                if (average === 0) return '#cbd5e1'; // Gris apagado
+                const ratio = current / average;
+                if (ratio > 1.25) {
+                    return '#ef4444'; // Rojo calor crítico
+                } else if (ratio > 1.05) {
+                    return '#f97316'; // Naranja intermedio
+                }
+                return null;
+            };
+
+            const l1Color = getHeatColor(i1, avg) || '#38bdf8'; // Celeste
+            const l2Color = getHeatColor(i2, avg) || '#34d399'; // Verde
+            const l3Color = getHeatColor(i3, avg) || '#fbbf24'; // Amarillo
+
+            // Actualizar color de los paths del grupo
+            document.querySelectorAll('#coil-l1 path').forEach(p => p.setAttribute('stroke', l1Color));
+            document.querySelectorAll('#coil-l2 path').forEach(p => p.setAttribute('stroke', l2Color));
+            document.querySelectorAll('#coil-l3 path').forEach(p => p.setAttribute('stroke', l3Color));
+
+            // Filtro de brillo glow
+            coils.l1.style.filter = (i1 / avg > 1.25) ? 'url(#heat-glow)' : '';
+            coils.l2.style.filter = (i2 / avg > 1.25) ? 'url(#heat-glow)' : '';
+            coils.l3.style.filter = (i3 / avg > 1.25) ? 'url(#heat-glow)' : '';
+        }
+
+        // Escuchar eventos
+        sliders.l1.addEventListener('input', calculateMetrics);
+        sliders.l2.addEventListener('input', calculateMetrics);
+        sliders.l3.addEventListener('input', calculateMetrics);
+
+        // Inicializar
+        calculateMetrics();
+    </script>
+</body>
+</html>
