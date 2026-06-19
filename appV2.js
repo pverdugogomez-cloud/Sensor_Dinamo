@@ -557,12 +557,20 @@ function switchChartType(type) {
 
 function renderChart(type) {
     const ctx = document.getElementById('consumptionChart').getContext('2d');
+    const { l1Data, l2Data, l3Data } = generateHistoricalDataTrifasico(type, selectedEquipo.dispositivo_id);
+
+    // Si el gráfico ya existe, es del mismo tipo y del mismo equipo, solo actualizamos los datos sin destruir para evitar el parpadeo
+    if (currentChart && currentChart.chartType === type && currentChart.dispositivoId === selectedEquipo.dispositivo_id) {
+        currentChart.data.datasets[0].data = l1Data;
+        currentChart.data.datasets[1].data = l2Data;
+        currentChart.data.datasets[2].data = l3Data;
+        currentChart.update('none'); // Desplazamiento suave sin pestañeo
+        return;
+    }
 
     if (currentChart) {
         currentChart.destroy();
     }
-
-    const { l1Data, l2Data, l3Data } = generateHistoricalDataTrifasico(type, selectedEquipo.dispositivo_id);
 
     Chart.defaults.color = '#64748b';
     Chart.defaults.font.family = 'Inter';
@@ -706,6 +714,8 @@ function renderChart(type) {
         },
         plugins: [noDataPlugin]
     });
+    currentChart.chartType = type;
+    currentChart.dispositivoId = selectedEquipo.dispositivo_id;
 }
 
 function openExpandedModal() {
