@@ -120,13 +120,17 @@ function generateHistoricalDataTrifasico(type, equipoId) {
         }
     });
 
-    // Añadir timestamp actual con nulo para autocompletar si es hoy
+    // Añadir timestamp actual con nulo para autocompletar si es hoy y el último dato es reciente (menor a 60 minutos)
     const isPastFilter = dom.dateTo && dom.dateTo.value && (new Date(dom.dateTo.value + 'T23:59:59') < new Date());
     if (!isPastFilter && l1Data.length > 0) {
-        const now = new Date();
-        l1Data.push({ x: now, y: null });
-        l2Data.push({ x: now, y: null });
-        l3Data.push({ x: now, y: null });
+        const lastRecordTime = l1Data[l1Data.length - 1].x;
+        const diffMinutes = (new Date() - lastRecordTime) / (1000 * 60);
+        if (diffMinutes < 60) {
+            const now = new Date();
+            l1Data.push({ x: now, y: null });
+            l2Data.push({ x: now, y: null });
+            l3Data.push({ x: now, y: null });
+        }
     }
 
     return { l1Data, l2Data, l3Data };
@@ -473,34 +477,53 @@ function updateRealTimeReadings(eq) {
         detailStatus.className = `${eq.badgeColor.replace('bg-', 'text-')} ${eq.badgeColor.replace('bg-', 'bg-').replace('500', '100')} px-2 py-0.5 rounded text-xs font-bold tracking-wider uppercase`;
     }
 
+    const displayEq = { ...eq };
+    const fechaUltimoDato = new Date(eq.fecha);
+    const ahora = new Date();
+    const minutosInactivo = (ahora - fechaUltimoDato) / (1000 * 60);
+    const isOffline = (eq.estadoLabel === 'SIN SEÑAL') || (minutosInactivo > 15);
+
+    if (isOffline) {
+        displayEq.corriente_l1 = 0;
+        displayEq.corriente_l2 = 0;
+        displayEq.corriente_l3 = 0;
+        displayEq.corriente = 0;
+        displayEq.desbalance = 0;
+        displayEq.voltaje_l1 = 0;
+        displayEq.voltaje_l2 = 0;
+        displayEq.voltaje_l3 = 0;
+        displayEq.potencia_kw = 0;
+        displayEq.frecuencia = 0;
+    }
+
     // Corrientes L1, L2, L3
-    dom.statL1Amp.textContent = eq.corriente_l1.toFixed(2);
-    dom.statL2Amp.textContent = eq.corriente_l2.toFixed(2);
-    dom.statL3Amp.textContent = eq.corriente_l3.toFixed(2);
+    dom.statL1Amp.textContent = displayEq.corriente_l1.toFixed(2);
+    dom.statL2Amp.textContent = displayEq.corriente_l2.toFixed(2);
+    dom.statL3Amp.textContent = displayEq.corriente_l3.toFixed(2);
 
     // Desbalance
-    dom.statUnbalance.textContent = eq.desbalance.toFixed(1);
-    if (eq.desbalance > 8) {
+    dom.statUnbalance.textContent = displayEq.desbalance.toFixed(1);
+    if (displayEq.desbalance > 8) {
         dom.badgeUnbalance.className = "text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-red-100 text-red-700 animate-pulse";
-    } else if (eq.desbalance > 4) {
+    } else if (displayEq.desbalance > 4) {
         dom.badgeUnbalance.className = "text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-amber-100 text-amber-700";
     } else {
         dom.badgeUnbalance.className = "text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-100 text-emerald-700";
     }
 
     // Voltajes L1, L2, L3
-    dom.statL1Vol.textContent = eq.voltaje_l1.toFixed(1);
-    dom.statL2Vol.textContent = eq.voltaje_l2.toFixed(1);
-    dom.statL3Vol.textContent = eq.voltaje_l3.toFixed(1);
+    dom.statL1Vol.textContent = displayEq.voltaje_l1.toFixed(1);
+    dom.statL2Vol.textContent = displayEq.voltaje_l2.toFixed(1);
+    dom.statL3Vol.textContent = displayEq.voltaje_l3.toFixed(1);
 
     // Parámetros de Operación
-    dom.statPower.textContent = eq.potencia_kw.toFixed(2);
-    dom.statFreq.textContent = eq.frecuencia.toFixed(1);
-    dom.statEnergy.textContent = eq.energia_activa.toFixed(2);
+    dom.statPower.textContent = displayEq.potencia_kw.toFixed(2);
+    dom.statFreq.textContent = displayEq.frecuencia.toFixed(1);
+    dom.statEnergy.textContent = displayEq.energia_activa.toFixed(2);
 
     // Actualizar tacómetros visuales (velocímetros)
-    updateGauge('gauge-amp-arc', 'gauge-amp-text', eq.corriente, 100, false);
-    updateGauge('gauge-desbal-arc', 'gauge-desbal-text', eq.desbalance, 20, true);
+    updateGauge('gauge-amp-arc', 'gauge-amp-text', displayEq.corriente, 100, false);
+    updateGauge('gauge-desbal-arc', 'gauge-desbal-text', displayEq.desbalance, 20, true);
 }
 
 // Función auxiliar para actualizar relojes SVG (Tacómetros)
@@ -727,7 +750,7 @@ function renderChart(type) {
                     },
                     pan: {
                         enabled: true,
-                        mode: 'xy',
+                        mode: 'x',
                     },
                     zoom: {
                         wheel: {
@@ -736,7 +759,7 @@ function renderChart(type) {
                         pinch: {
                             enabled: true
                         },
-                        mode: 'xy',
+                        mode: 'x',
                     }
                 }
             },
@@ -888,7 +911,7 @@ function openExpandedModal() {
                     },
                     pan: {
                         enabled: true,
-                        mode: 'xy',
+                        mode: 'x',
                     },
                     zoom: {
                         wheel: {
@@ -897,7 +920,7 @@ function openExpandedModal() {
                         pinch: {
                             enabled: true
                         },
-                        mode: 'xy',
+                        mode: 'x',
                     }
                 }
             },
