@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoreo Industrial Trifásico V2</title>
+    <!-- Tailwind CSS (CDN para desarrollo rápido) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            900: '#0f172a',
+                        },
+                        electric: {
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Iconos Phosphor -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="h-[100dvh] w-screen overflow-hidden bg-slate-50 text-slate-900 font-sans flex flex-col md:flex-row antialiased">
+
+    <!-- Sidebar 25% -->
+    <aside class="w-full md:w-1/4 h-[40vh] md:h-full bg-white border-t md:border-t-0 md:border-r border-slate-200 flex flex-col z-20 relative shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] md:shadow-xl order-2 md:order-1">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <div>
+                <h1 class="text-xl font-bold text-slate-900 tracking-wide">DÍNAMO<span class="text-electric-500 font-light">SYSTEMS</span> <span class="text-xs bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-mono">V2</span></h1>
+                <p class="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">Monitoreo Trifásico y Multiequipo</p>
+            </div>
+            <!-- Botón Ayuda Guía de Diagnósticos -->
+            <a href="comparativa_diagnosticos.html" class="guide-trigger p-2 text-slate-400 hover:text-electric-600 hover:bg-slate-100 rounded-lg transition" title="Guía de Diagnóstico (Desbalance vs Sobrecarga)">
+                <i class="ph ph-question text-lg"></i>
+            </a>
+        </div>
+        
+        <div class="p-4 flex-1 overflow-y-auto" id="equipment-list">
+            <!-- Loading state -->
+            <div class="flex items-center justify-center h-20 text-slate-400">
+                <i class="ph ph-spinner animate-spin text-2xl mr-2"></i> Cargando equipos...
+            </div>
+            <!-- Items se insertarán aquí dinámicamente -->
+        </div>
+        
+        <div class="p-4 border-t border-slate-100 text-xs text-slate-500 flex justify-between items-center">
+            <span>Estado: <span id="connection-status" class="text-amber-500 font-medium">No Conectado</span></span>
+        </div>
+    </aside>
+
+    <!-- Main Panel 75% -->
+    <main class="w-full md:w-3/4 h-[60vh] md:h-full relative z-10 bg-slate-100 order-1 md:order-2">
+        <div id="map" class="w-full h-full z-0"></div>
+
+        <!-- Panel de Detalle e Interacción (Pop-up Lateral) -->
+        <div id="detail-panel" class="absolute top-14 inset-x-2 bottom-2 md:inset-auto md:top-4 md:left-4 md:bottom-4 w-auto md:w-[420px] bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-2xl flex flex-col transform -translate-x-[120%] md:-translate-x-[110%] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-[1000] overflow-hidden opacity-0 pointer-events-none">
+            
+            <div class="p-5 border-b border-slate-100 flex justify-between items-start bg-slate-50">
+                <div>
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        <span class="bg-electric-500/10 text-electric-600 px-2 py-0.5 rounded text-xs font-bold tracking-wider" id="detail-status">ACTIVO</span>
+                        <span class="text-xs text-slate-500 font-mono" id="detail-id">ID: ---</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-900" id="detail-name">Seleccione Equipo</h2>
+                    <p class="text-sm text-slate-500 mt-1 flex items-center gap-1"><i class="ph ph-map-pin"></i> <span id="detail-location">---</span></p>
+                </div>
+                <div class="flex gap-2">
+                    <button id="btn-expand" class="p-2 text-slate-400 hover:text-electric-600 hover:bg-slate-100 rounded-lg transition" title="Expandir Análisis">
+                        <i class="ph ph-arrows-out-simple text-lg"></i>
+                    </button>
+                    <button id="btn-close-detail" class="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-lg transition" title="Cerrar Panel">
+                        <i class="ph ph-x text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-5 flex-1 flex flex-col overflow-y-auto space-y-4">
+                
+                <!-- Filtros y Selectores -->
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Parámetros</h3>
+                    
+                    <div class="flex bg-slate-200/50 rounded-lg p-1 mb-4 border border-slate-200">
+                        <button id="btn-chart-amp" class="flex-1 py-1.5 text-xs font-medium rounded-md bg-white text-slate-900 shadow-sm border border-slate-200 transition">Amperaje</button>
+                        <button id="btn-chart-vol" class="flex-1 py-1.5 text-xs font-medium rounded-md text-slate-500 hover:text-slate-900 transition">Voltaje</button>
+                        <button id="btn-chart-unb" class="flex-1 py-1.5 text-xs font-medium rounded-md text-slate-500 hover:text-slate-900 transition">Desbalance</button>
+                    </div>
+
+                    <div class="flex gap-2 mb-4">
+                        <button id="btn-filter-today" class="flex-1 py-1 text-xs font-medium rounded-md bg-slate-200 text-slate-700 hover:bg-electric-500 hover:text-white transition">Hoy</button>
+                        <button id="btn-filter-yesterday" class="flex-1 py-1 text-xs font-medium rounded-md bg-slate-200 text-slate-700 hover:bg-electric-500 hover:text-white transition">Ayer</button>
+                        <button id="btn-filter-week" class="flex-1 py-1 text-xs font-medium rounded-md bg-slate-200 text-slate-700 hover:bg-electric-500 hover:text-white transition">7 Días</button>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1 relative">
+                            <i class="ph ph-calendar-blank absolute left-2 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="date" id="date-from" class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-2 py-1.5 text-xs text-slate-700 focus:ring-1 focus:ring-electric-500 outline-none">
+                        </div>
+                        <span class="text-slate-400">-</span>
+                        <div class="flex-1 relative">
+                            <i class="ph ph-calendar-blank absolute left-2 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="date" id="date-to" class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-2 py-1.5 text-xs text-slate-700 focus:ring-1 focus:ring-electric-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tacómetros (Gauges de aguja) estilo Auto -->
+                <div class="grid grid-cols-2 gap-4 bg-slate-50 border border-slate-200 rounded-xl p-4 relative">
+                    <!-- Botón de información flotante -->
+                    <a href="comparativa_diagnosticos.html" class="guide-trigger absolute top-2 right-2 p-1 text-slate-400 hover:text-electric-600 hover:bg-slate-200/50 rounded-md transition" title="¿Cómo interpretar estos relojes? Ver Guía">
+                        <i class="ph ph-question text-sm"></i>
+                    </a>
+                    <!-- Gauge Amperaje -->
+                    <div class="text-center flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Carga (Amperaje)</span>
+                        <div class="relative w-32">
+                            <svg viewBox="0 0 100 55" class="w-full h-auto">
+                                <!-- Background Arc -->
+                                <path d="M 15 50 A 35 35 0 0 1 85 50" fill="none" stroke="#e2e8f0" stroke-width="8" stroke-linecap="round"/>
+                                <!-- Active Arc (stroke-dasharray="110") -->
+                                <path id="gauge-amp-arc" d="M 15 50 A 35 35 0 0 1 85 50" fill="none" stroke="#e2e8f0" stroke-width="8" stroke-linecap="round" stroke-dasharray="110" stroke-dashoffset="110" class="transition-all duration-500 ease-out"/>
+                                <text x="50" y="45" text-anchor="middle" class="text-xs font-black fill-slate-700" id="gauge-amp-text">0.0A</text>
+                            </svg>
+                        </div>
+                    </div>
+                    <!-- Gauge Desbalance -->
+                    <div class="text-center flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Desbalance (%)</span>
+                        <div class="relative w-32">
+                            <svg viewBox="0 0 100 55" class="w-full h-auto">
+                                <path d="M 15 50 A 35 35 0 0 1 85 50" fill="none" stroke="#e2e8f0" stroke-width="8" stroke-linecap="round"/>
+                                <path id="gauge-desbal-arc" d="M 15 50 A 35 35 0 0 1 85 50" fill="none" stroke="#e2e8f0" stroke-width="8" stroke-linecap="round" stroke-dasharray="110" stroke-dashoffset="110" class="transition-all duration-500 ease-out"/>
+                                <text x="50" y="45" text-anchor="middle" class="text-xs font-black fill-slate-700" id="gauge-desbal-text">0.0%</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico -->
+                <div class="relative h-[220px] w-full bg-white border border-slate-200 rounded-xl p-2">
+                    <canvas id="consumptionChart"></canvas>
+                </div>
+
+                <!-- Lecturas de Corriente (Amperaje) -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Corrientes (Fases)</span>
+                        <div id="badge-unbalance" class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-slate-200 text-slate-700">
+                            Desbalance: <span id="stat-unbalance">0.0</span>%
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-white border border-slate-100 rounded-lg p-2.5 text-center shadow-sm">
+                            <p class="text-[10px] text-slate-400 font-medium">L1</p>
+                            <p class="text-sm font-bold text-sky-600"><span id="stat-l1-amp">0.00</span> <span class="text-[10px] font-normal text-slate-500">A</span></p>
+                        </div>
+                        <div class="bg-white border border-slate-100 rounded-lg p-2.5 text-center shadow-sm">
+                            <p class="text-[10px] text-slate-400 font-medium">L2</p>
+                            <p class="text-sm font-bold text-emerald-600"><span id="stat-l2-amp">0.00</span> <span class="text-[10px] font-normal text-slate-500">A</span></p>
+                        </div>
+                        <div class="bg-white border border-slate-100 rounded-lg p-2.5 text-center shadow-sm">
+                            <p class="text-[10px] text-slate-400 font-medium">L3</p>
+                            <p class="text-sm font-bold text-amber-600"><span id="stat-l3-amp">0.00</span> <span class="text-[10px] font-normal text-slate-500">A</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lecturas de Voltaje -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Voltajes de Línea</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-white border border-slate-100 rounded-lg p-2.5 text-center shadow-sm">
+                            <p class="text-[10px] text-slate-400 font-medium">L1</p>
+                            <p class="text-sm font-bold text-slate-700"><span id="stat-l1-vol">0.0</span> <span class="text-[10px] font-normal text-slate-500">V</span></p>
+                        </div>
+                        <div class="bg-white border border-slate-100 rounded-lg p-2.5 text-center shadow-sm">
+                            <p class="text-[10px] text-slate-400 font-medium">L2</p>
+                            <p class="text-sm font-bold text-slate-700"><span id="stat-l2-vol">0.0</span> <span class="text-[10px] font-normal text-slate-500">V</span></p>
+                        </div>
+                        <div class="bg-white border border-slate-100 rounded-lg p-2.5 text-center shadow-sm">
+                            <p class="text-[10px] text-slate-400 font-medium">L3</p>
+                            <p class="text-sm font-bold text-slate-700"><span id="stat-l3-vol">0.0</span> <span class="text-[10px] font-normal text-slate-500">V</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parámetros de Operación -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Parámetros Operacionales</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-white border border-slate-100 rounded-lg p-2 text-center shadow-sm">
+                            <p class="text-[9px] text-slate-400 font-medium">Potencia</p>
+                            <p class="text-xs font-bold text-purple-600"><span id="stat-power">0.00</span> <span class="text-[9px] font-normal text-slate-500">kW</span></p>
+                        </div>
+                        <div class="bg-white border border-slate-100 rounded-lg p-2 text-center shadow-sm">
+                            <p class="text-[9px] text-slate-400 font-medium">Frecuencia</p>
+                            <p class="text-xs font-bold text-slate-700"><span id="stat-freq">0.0</span> <span class="text-[9px] font-normal text-slate-500">Hz</span></p>
+                        </div>
+                        <div class="bg-white border border-slate-100 rounded-lg p-2 text-center shadow-sm">
+                            <p class="text-[9px] text-slate-400 font-medium">Energía</p>
+                            <p class="text-xs font-bold text-slate-700"><span id="stat-energy">0.00</span> <span class="text-[9px] font-normal text-slate-500">kWh</span></p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Expandido (Analítico) -->
+    <div id="expanded-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[2000] hidden flex-col transition-opacity duration-300 opacity-0">
+        <div class="p-4 md:p-6 border-b border-white/10 flex justify-between items-center bg-white shadow-sm">
+            <h2 class="flex-1 min-w-0 text-lg md:text-2xl font-bold text-slate-900 flex items-center gap-2 md:gap-3 mr-2">
+                <i class="ph ph-chart-line-up text-electric-600 shrink-0"></i>
+                <span class="truncate">Análisis Detallado <span id="expanded-title" class="text-slate-500 font-light"></span></span>
+            </h2>
+            <button id="btn-close-expanded" class="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition shrink-0">
+                <i class="ph ph-x text-xl md:text-2xl"></i>
+            </button>
+        </div>
+        <div class="flex-1 p-2 md:p-8 w-full max-w-7xl mx-auto flex flex-col min-h-0">
+             <div class="flex-1 relative w-full bg-white border border-slate-200 rounded-xl md:rounded-2xl p-2 md:p-6 shadow-2xl overflow-hidden">
+                 <canvas id="expandedChart"></canvas>
+             </div>
+        </div>
+    </div>
+
+    <!-- Modal de la Guía de Diagnósticos (iframe) -->
+    <div id="guide-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[3000] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
+            <!-- Encabezado del Modal -->
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="ph ph-question text-indigo-500 text-lg"></i>
+                    Guía de Diagnóstico & Simuladores
+                </h3>
+                <button id="btn-close-guide" class="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+            <!-- Cuerpo del Modal (iframe) -->
+            <div class="flex-1 w-full h-full bg-slate-100">
+                <iframe id="guide-iframe" src="" class="w-full h-full border-0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal del Simulador (iframe de mayor jerarquía z-index) -->
+    <div id="sim-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[4000] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
+            <!-- Encabezado del Modal -->
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 id="sim-modal-title" class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="ph ph-cpu text-indigo-500"></i>
+                    Simulador Interactivo
+                </h3>
+                <button id="btn-close-sim" class="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+            <!-- Cuerpo del Modal (iframe) -->
+            <div class="flex-1 w-full h-full bg-slate-100">
+                <iframe id="sim-iframe" src="" class="w-full h-full border-0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
+    <!-- Script de Control del Modal de Guía -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('guide-modal');
+            const iframe = document.getElementById('guide-iframe');
+            const closeBtn = document.getElementById('btn-close-guide');
+            const triggers = document.querySelectorAll('.guide-trigger');
+
+            triggers.forEach(trigger => {
+                trigger.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    iframe.src = trigger.getAttribute('href');
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                });
+            });
+
+            const closeGuide = () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                iframe.src = '';
+            };
+
+            closeBtn.addEventListener('click', closeGuide);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeGuide();
+                }
+            });
+
+            // Control del Modal de Simulador (Superior)
+            const simModal = document.getElementById('sim-modal');
+            const simIframe = document.getElementById('sim-iframe');
+            const simTitle = document.getElementById('sim-modal-title');
+            const simCloseBtn = document.getElementById('btn-close-sim');
+
+            window.abrirSimuladorDesdeHijo = function(url, title) {
+                simIframe.src = url;
+                simTitle.innerHTML = `<i class="ph ph-cpu text-indigo-600 text-lg"></i> ${title}`;
+                simModal.classList.remove('hidden');
+                simModal.classList.add('flex');
+            };
+
+            // Escuchar mensajes postMessage del iframe (ideal para evitar bloqueos CORS locales de file:///)
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.action === 'openSimulator') {
+                    window.abrirSimuladorDesdeHijo(event.data.url, event.data.title);
+                }
+            });
+
+            const closeSim = () => {
+                simModal.classList.add('hidden');
+                simModal.classList.remove('flex');
+                simIframe.src = '';
+            };
+
+            simCloseBtn.addEventListener('click', closeSim);
+            simModal.addEventListener('click', (e) => {
+                if (e.target === simModal) {
+                    closeSim();
+                }
+            });
+        });
+    </script>
+    <script src="appV2.js"></script>
+</body>
+</html>
